@@ -104,7 +104,7 @@ REPLACEMENT_REGEXES = [
 
 ################################################################################
 
-def TransformContent(base_url, accessed_url, content,is_html=True,ChineseWordsencoding=True,whitelist=''):    
+def TransformContent(base_url, accessed_url, content,is_html=True,whitelist=''):    
     #base_url = b64.uri_b64decode(base_url)
     url_obj = urlparse.urlparse(accessed_url)
     accessed_dir = os.path.dirname(url_obj.path)
@@ -183,52 +183,28 @@ def TransformContent(base_url, accessed_url, content,is_html=True,ChineseWordsen
         #content = re.sub(pattern, (fixed_replacement), (content))
         content = p.sub( func, (content))
     
-    '''汉字编码'''
     def func2(m):  
         #encode_m = ord( m.group(0)) 
         mm =  '\0'.join(['&#'+str(ord(i))+';' for i in m.group(0)])
         return mm
     rc=re.compile(ur'[\u4E00-\u9FA5]+',re.IGNORECASE)  
-    def encodechinese(mycontent,mycoding):
-        if mycoding:
-            mycontent = mycontent.decode(mycoding).decode('utf-8')
-        return rc.sub(func2,mycontent)
     cachekey = 'coding_cache_%s'%get_url_key_name(url_obj.netloc)
     codinglist = ['utf8','utf-8','utf-16','big5','gb2312','gbk','gb18030']
     def get_coding():
         if not is_html: return None #不是html文件
         
-        #如果在白名单，即使ChineseWordsencoding设置为否，也进行编码
         if whitelist!='':
-            #格式是： twitter.com:utf-8$google.com:utf-8          
             w =[ {'site':x.split(':')[0],'encoding':x.split(':')[1]} for x in whitelist.split('$') if x.strip()!='' and x.index(':')>=0 and url_obj.netloc.endswith(x.split(':')[0]) ]
             if w:
                 return w[0]['encoding']
                 #logging.error(w[0])        
         
-        #如果不在白名单，而且ChineseWordsencoding设置为是，进行检测        
-        if ChineseWordsencoding :
-            #memcahce查找
-            mem_coding = mymemcache.cache_get(cachekey)
-            if mem_coding:
-                return mem_coding
-        
-            '''  如果是Html文件，编码其中的中文部分 '''        
-            try:                 
-                detectcoding = chardet.detect(content)
-                coding = detectcoding and detectcoding['encoding'] or None                    
-                if  coding and coding.lower() in codinglist:                              
-                    #logging.error(coding)                
-                    return coding                 
-            except Exception,e:                            
-                logging.info(u'检测编码失败 %s'%e)
-                return None
         return None
    
     
     coding = get_coding()
 
-    if is_html and (coding or ChineseWordsencoding): 
+    if is_html and coding:
         if coding:
             codinglist =  [ x for x in  codinglist if x!=coding]
             codinglist[0:0] = [coding]
@@ -236,7 +212,6 @@ def TransformContent(base_url, accessed_url, content,is_html=True,ChineseWordsen
         for c in codinglist :
             try:
                 #logging.error(coding)                
-                content = encodechinese(content,c )
                 mymemcache.cache_get_or_put(cachekey, coding, True, 60*60*24*10, force_nosave=False)
                 logging.info(u'编码成功 ,%s使用的是：  %s'%(url_obj.netloc,c) )
                 processOK = True
@@ -245,9 +220,6 @@ def TransformContent(base_url, accessed_url, content,is_html=True,ChineseWordsen
                 logging.info(u'编码失败 ,%s使用的不是：  %s'%(url_obj.netloc,c) )
                 processOK = False
                 pass
-        if processOK == False:
-            try: content = encodechinese(content,None )
-            except: pass
     #content = repr(content.decode('big5'))    
     return content
 

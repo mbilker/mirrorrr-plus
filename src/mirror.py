@@ -131,14 +131,12 @@ class HomeHandler(BaseHandler):
 class setupHandler(BaseHandler):
     def get(self):  
         #load from cookie
-        ChineseWordsencoding = CookieHelper.ChineseWordsencoding(self )
         useCache = CookieHelper.useCache(self)
         EncodingWhiteList = CookieHelper.EncodingWhiteList(self)
         
         logging.info(EncodingWhiteList)
         
-        cookies = {'ChineseWordsencoding':ChineseWordsencoding,
-                   'useCache':useCache,
+        cookies = {'useCache':useCache,
                    'EncodingWhiteList':EncodingWhiteList.replace('$','\n'),
                    }
 
@@ -150,17 +148,14 @@ class setupHandler(BaseHandler):
     
     def post(self):
         #get post
-        ChineseWordsencoding = self.request.get("ChineseWordsencoding")=='on' and 'checked' or ''
         useCache = self.request.get("useCache")=='on' and 'checked' or ''
         EncodingWhiteList = self.request.get("EncodingWhiteList")
         
         #save in cookie
-        CookieHelper.set_ChineseWordsencoding(self,ChineseWordsencoding)
         CookieHelper.set_useCache(self  ,useCache) 
         CookieHelper.set_EncodingWhiteList(self,EncodingWhiteList.replace('\n','$').replace('\t','').replace('\r',''))  
         
-        cookies = {'ChineseWordsencoding':ChineseWordsencoding,
-                   'useCache':useCache,
+        cookies = {'useCache':useCache,
                    'EncodingWhiteList':EncodingWhiteList,
                    }
          
@@ -204,11 +199,10 @@ class MirrorHandler(BaseHandler):
         content = CookieHelper.useCache(self)  and MirroredContent.get_by_key_name(key_name) or None
         if content is None:
             logging.debug("Cache miss")  
-            ChineseWordsencoding = CookieHelper.ChineseWordsencoding(self )
             EncodingWhiteList = CookieHelper.EncodingWhiteList(self)
             content = MirroredContent.fetch_and_store(key_name, base_url,
                                                     translated_address,
-                                                    mirrored_url,post_data,ChineseWordsencoding,EncodingWhiteList)
+                                                    mirrored_url,post_data,EncodingWhiteList)
                          
         if content is None:
             #return self.error(404)

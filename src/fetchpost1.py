@@ -98,7 +98,7 @@ class MirroredContent(object):
         return memcache.get(key_name)
     
     @staticmethod
-    def fetch_and_store(key_name, base_url, translated_address, mirrored_url,postdata=None,ChineseWordsencoding=True,whitelist=''):
+    def fetch_and_store(key_name, base_url, translated_address, mirrored_url,postdata=None,whitelist=''):
         """Fetch and cache a page.
         
         Args:
@@ -140,7 +140,7 @@ class MirroredContent(object):
             if page_content_type.startswith(content_type):
                 is_html = page_content_type.startswith('text/html')
                 if is_html: logging.error(u'transform:%s'%mirrored_url)
-                content = transform_content.TransformContent(base_url, mirrored_url, content,is_html,ChineseWordsencoding,whitelist)
+                content = transform_content.TransformContent(base_url, mirrored_url, content, is_html, whitelist)
                 break
         
         # If the transformed content is over 1MB, truncate it (yikes!)
